@@ -15,7 +15,7 @@ Es la referencia de integración canónica: replica el patrón real (browser hac
 usuario; el backend, con la API key, emite eventos y verifica tokens).
 
 > **Nota:** este demo consume el SDK por `file:../gateward-sdk`, o sea que
-> espera el repo [`gateward-sdk`](https://github.com/dPeluChe/gateward-sdk)
+> espera el repo [`gateward-sdk`](https://github.com/Iteristech/gateward-sdk)
 > clonado al lado. Cuando `@gateward/sdk` esté publicado en npm, cambiá esa
 > línea de `package.json` por la versión y desaparece el requisito.
 
