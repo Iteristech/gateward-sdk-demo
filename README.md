@@ -92,3 +92,10 @@ token muerto o un logout en otra pestaña aparecen igual.
   Confirmar revoca todas las sesiones: hay que volver a loguear con el email nuevo.
 - **delete account** es irreversible y pide el password. Da de baja la membership de esta app;
   la identidad se anonimiza solo si no queda en ninguna otra app del pool.
+
+## Cómo se trabaja
+
+Rama por cambio, PR a `main` con squash-merge; `main` no despliega. Se promueve con PR
+`main` a `stg` y luego a `prod`, siempre con merge commit. CI corre en Strongback
+(`[self-hosted, sbk-small]`; los PRs de forks usan `ubuntu-latest`), sin caches y con
+`timeout-minutes` y `concurrency`. Un PR no se mergea en rojo.
