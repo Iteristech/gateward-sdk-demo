@@ -93,6 +93,12 @@ token muerto o un logout en otra pestaña aparecen igual.
 - **delete account** es irreversible y pide el password. Da de baja la membership de esta app;
   la identidad se anonimiza solo si no queda en ninguna otra app del pool.
 
+## Próximo
+
+Cuando el Core y el SDK lo publiquen, el demo suma los flujos de registro por invitación, lista
+de espera y suscripción a una lista de correo. Hoy no existen; el diseño está en el doc
+`ACCESS_AND_NOTIFICATIONS.md` del Core (repo `gateward-core`, carpeta `docs/FEATURES`).
+
 ## Cómo se trabaja
 
 Rama por cambio, PR a `main` con squash-merge; `main` no despliega. Se promueve con PR
