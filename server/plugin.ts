@@ -51,6 +51,32 @@ export function gatewardApi(opts: GatewardApiOptions): Plugin {
             );
             return json(res, 200, { member });
           }
+          if (req.url === "/api/invite" && req.method === "POST") {
+            // ACCESS-001: needs invitations:write on the key.
+            const invitations = await server.createInvitations(
+              opts.appId ?? "",
+              [{ email: body.email }],
+              { sendEmail: body.sendEmail ?? true },
+            );
+            return json(res, 200, { invitations });
+          }
+          if (req.url === "/api/release-waitlist" && req.method === "POST") {
+            // WAITLIST-001: needs waitlist:manage. Codes come back because the
+            // demo does not mail them.
+            const released = await server.releaseWaitlist(opts.appId ?? "", {
+              count: body.count ?? 1,
+              sendEmail: false,
+            });
+            return json(res, 200, { released });
+          }
+          if (req.url === "/api/broadcast" && req.method === "POST") {
+            // LIST-001: needs notifications:send.
+            const queued = await server.broadcast(opts.appId ?? "", body.list, {
+              subject: body.subject,
+              text: body.text,
+            });
+            return json(res, 200, { queued });
+          }
           if (req.url === "/api/set-metadata" && req.method === "POST") {
             // Per-app user metadata (needs users:write_app on the API key).
             const metadata = await server.updateUserMetadata(

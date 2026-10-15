@@ -93,11 +93,19 @@ token muerto o un logout en otra pestaña aparecen igual.
 - **delete account** es irreversible y pide el password. Da de baja la membership de esta app;
   la identidad se anonimiza solo si no queda en ninguna otra app del pool.
 
-## Próximo
+## Acceso, listas y formulario de contacto
 
-Cuando el Core y el SDK lo publiquen, el demo suma los flujos de registro por invitación, lista
-de espera, suscripción a una lista de correo y un formulario de contacto, con la interfaz dibujada por el propio demo (el SDK no trae UI). Hoy no existen; el diseño está en el doc
-`ACCESS_AND_NOTIFICATIONS.md` del Core (repo `gateward-core`, carpeta `docs/FEATURES`).
+Tres tarjetas ejercitan lo que el SDK trae para acceso controlado; la interfaz es del propio demo
+(el SDK no trae UI). Diseño en `ACCESS_AND_NOTIFICATIONS.md` del Core (`docs/FEATURES`).
+
+| Tarjeta | Qué hace | Prepara en el Core |
+|---|---|---|
+| **Access** | muestra `registration_mode`; registra con un código (`inviteToken`); entra y confirma la lista de espera; "invite this email" y "release 1" desde el servidor | `PATCH /v1/apps/{id}` con `registration_mode`; la API key con `invitations:write` y `waitlist:manage` |
+| **Mailing list** | suscribe y confirma, baja por token, preferencias del usuario con sesión y difusión desde el servidor | una lista (`POST /v1/apps/{id}/lists`); la key con `notifications:send` |
+| **Contact form** | `getForm` y dibuja los campos que describe, `submitForm` con campo trampa y hora de muestra, y los errores por campo de `GatewardError.fieldErrors` | un formulario (`PUT /v1/apps/{id}/forms/contact`) |
+
+Los códigos de confirmación salen en el log del Core (`waitlist_token`, `list_token`) cuando no hay
+SMTP; el dashboard permite crear todo lo de la columna derecha sin `curl`.
 
 ## Cómo se trabaja
 
