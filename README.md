@@ -96,7 +96,7 @@ token muerto o un logout en otra pestaña aparecen igual.
 ## Próximo
 
 Cuando el Core y el SDK lo publiquen, el demo suma los flujos de registro por invitación, lista
-de espera y suscripción a una lista de correo. Hoy no existen; el diseño está en el doc
+de espera, suscripción a una lista de correo y un formulario de contacto, con la interfaz dibujada por el propio demo (el SDK no trae UI). Hoy no existen; el diseño está en el doc
 `ACCESS_AND_NOTIFICATIONS.md` del Core (repo `gateward-core`, carpeta `docs/FEATURES`).
 
 ## Cómo se trabaja
