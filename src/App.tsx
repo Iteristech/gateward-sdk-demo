@@ -10,6 +10,7 @@ import {
   type MembershipResponse,
   type SessionSummary,
 } from "@gateward/sdk";
+import { Access } from "./Access.js";
 import { apiPost } from "./api.js";
 
 const BASE_URL = import.meta.env.VITE_GATEWARD_URL ?? "http://localhost:8080";
@@ -84,7 +85,7 @@ export function App() {
     run("ready (app config)", async () => {
       const c = await auth.ready();
       setConfig(c);
-      return `${c.environment} · verification ${c.require_email_verification ? "required" : "off"} · password ≥${c.password_policy.min_length}`;
+      return `${c.environment} · registration ${c.registration_mode} · verification ${c.require_email_verification ? "required" : "off"} · password ≥${c.password_policy.min_length}`;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth]);
@@ -199,6 +200,8 @@ export function App() {
           </button>
         </div>
       </section>
+
+      <Access auth={auth} run={run} config={config} email={email} password={password} />
 
       <div className="grid">
         <section className="card">
