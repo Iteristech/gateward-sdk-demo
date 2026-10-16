@@ -21,30 +21,64 @@ usuario; el backend, con la API key, emite eventos y verifica tokens).
 
 ## Setup
 
-1. **Levantá el Core local** (repo `gateward-core`):
+Prerequisitos: Node y pnpm 10 (verificado con Node 26.0.0 y pnpm 10.23.0; el CI usa Node 22),
+Docker (solo para `pnpm verify-user`) y un Core local. Los tres repos (`gateward-core`,
+`gateward-sdk` y este) van clonados lado a lado:
+
+```bash
+git clone https://github.com/Iteristech/gateward-sdk.git
+git clone https://github.com/Iteristech/gateward-sdk-demo.git
+cd gateward-sdk-demo
+```
+
+1. **Levantá el Core local** (repo `gateward-core`, sus pasos están en su README):
    ```bash
    make run   # docker + migraciones + :8080
-   make bootstrap-admin EMAIL=admin@local.test PASSWORD='Admin!Pass123'
+   make bootstrap-admin EMAIL=dev@gateward.local PASSWORD='Dev-pass-123!'   # platform_admin de dev
    ```
-   Asegurate de que el Core tenga `CORS_ALLOWED_ORIGINS=http://localhost:5173` en su `.env`
-   (el browser llama cross-origin).
+   Su `.env` debe tener `CORS_ALLOWED_ORIGINS=http://localhost:5173` (el browser llama cross-origin).
+   Comprobá con `curl localhost:8080/health/ready`: tiene que decir `"db":"ok","redis":"ok"`.
 
-2. **Aprovisioná app + api key** (platform-login → ecosystem → pool → app → api key con
-   scopes `events:write`, `users:write_app`; para los botones de miembros y
-   las tarjetas de acceso, además los de `.env.example`). Rápido con el Swagger
-   (`ENABLE_SWAGGER_UI=true`, `/swagger-ui`) o por `curl`. Guardá el `app_id` y la `key`.
-
-3. **Configurá el demo:**
+2. **Compilá el SDK e instalá el demo**, en este orden:
    ```bash
-   cp .env.example .env      # completá VITE_GATEWARD_APP_ID, GATEWARD_APP_ID, GATEWARD_API_KEY
-   pnpm -C ../gateward-sdk build   # el SDK se consume por file: → necesita dist/
-   pnpm install
+   pnpm -C ../gateward-sdk install
+   pnpm -C ../gateward-sdk build     # genera ../gateward-sdk/dist
+   pnpm install                      # copia el SDK ya compilado a node_modules
    ```
+   El orden importa: pnpm copia `file:../gateward-sdk` al instalar, no lo enlaza. Si instalaste el
+   demo antes de compilar el SDK, volvé a correr `pnpm install`.
+
+3. **Aprovisioná app + API key y llená el `.env`** con el script. Crea ecosystem, pool, app con
+   `environment: test` y una key con los scopes de `.env.example`, y escribe los tres valores:
+   ```bash
+   PLATFORM_EMAIL=dev@gateward.local PLATFORM_PASSWORD='Dev-pass-123!' pnpm provision
+   ```
+   Salida esperada: `app <uuid> lista; .env actualizado (la key no se vuelve a mostrar)`. Cada corrida
+   crea un ecosystem y una app nuevos. A mano (Swagger en `/swagger-ui` con `ENABLE_SWAGGER_UI=true`,
+   o `curl`) el camino es platform-login, ecosystem, pool, app y `POST /v1/admin/api-keys`; guardá
+   el `app_id` y la `key` en `.env` (`cp .env.example .env`).
 
 4. **Corré:**
    ```bash
    pnpm dev      # http://localhost:5173
    ```
+   Esperás `VITE v6... ready` y `Local: http://localhost:5173/`. Para comprobar el backend del demo:
+   ```bash
+   curl -s localhost:5173/api/verify -H 'content-type: application/json' -d '{"token":"x"}'
+   ```
+   Responde 500 con `JWSInvalid`: la ruta existe y el plugin cargó (con un token real da 200 y los `claims`).
+
+### Errores comunes (vistos en una instalación limpia)
+
+| Si ves | Pasa porque | Arreglo |
+|---|---|---|
+| `sh: tsup: command not found` al compilar el SDK | faltó instalar las dependencias del SDK | `pnpm -C ../gateward-sdk install` y después `build` |
+| `Failed to resolve entry for package "@gateward/sdk"` en `pnpm dev` | el demo se instaló antes de compilar el SDK | compilá el SDK y corré `pnpm install` otra vez |
+| `faltan PLATFORM_EMAIL y PLATFORM_PASSWORD` | el script necesita el platform_admin del Core | pasalos como en el paso 3 |
+| `missing X-Gateward-App-Id header` (curl directo al Core) | los endpoints de usuario piden el header con el `app_id` | `-H "X-Gateward-App-Id: <app_id>"` |
+| `forbidden` (403) al hacer login tras registrar | el usuario no está verificado | `pnpm verify-user <email>` |
+| `user_id does not belong to the caller's identity pool` en `/api/send-event` | el `userId` no es de un usuario de esta app | usá el `sub` de un login de esta app |
+| `not found` en `/api/broadcast` | la lista no existe en el Core | creá la lista (ver "Acceso, listas y formulario") |
 
 ## Qué ejercita
 
@@ -62,7 +96,7 @@ token muerto o un logout en otra pestaña aparecen igual.
 ## Flujo de prueba
 
 1. **register** → 202 (el Core exige verificar email antes de login).
-2. Marcá el usuario verificado (no hay SMTP local):
+2. Marcá el usuario verificado (no hay SMTP local; el email es el mismo del register):
    ```bash
    pnpm verify-user demo@example.com
    ```
@@ -82,6 +116,7 @@ token muerto o un logout en otra pestaña aparecen igual.
 - `server/plugin.ts` — plugin de Vite con `GatewardServer`: `/api/send-event`, `/api/verify`, `/api/members`, `/api/set-role`, `/api/set-metadata`, `/api/invite`, `/api/release-waitlist` y `/api/broadcast`.
 - `vite.config.ts` — separa env de browser (`VITE_*`) del de servidor (API key).
 - `scripts/verify-user.mjs` — helper dev para marcar un usuario verificado.
+- `scripts/provision.mjs` — helper dev (`pnpm provision`): crea ecosystem, pool, app y API key en un Core local y llena el `.env`.
 
 ## Lo que cada botón espera que sepas
 
