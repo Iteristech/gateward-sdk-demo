@@ -30,8 +30,9 @@ usuario; el backend, con la API key, emite eventos y verifica tokens).
    (el browser llama cross-origin).
 
 2. **Aprovisioná app + api key** (platform-login → ecosystem → pool → app → api key con
-   scopes `events:write`, `events:read_app`, `users:write_app`). Rápido con el Swagger (`ENABLE_SWAGGER_UI=true`, `/swagger-ui`) o
-   por `curl`. Guardá el `app_id` y la `key`.
+   scopes `events:write`, `users:write_app`; para los botones de miembros y
+   las tarjetas de acceso, además los de `.env.example`). Rápido con el Swagger
+   (`ENABLE_SWAGGER_UI=true`, `/swagger-ui`) o por `curl`. Guardá el `app_id` y la `key`.
 
 3. **Configurá el demo:**
    ```bash
@@ -52,7 +53,8 @@ usuario; el backend, con la API key, emite eventos y verifica tokens).
 | register (detecta auto-login), login, refresh, logout | `verifyToken` vía JWKS |
 | `getUser`, `updateProfile`, `changePassword` | `sendEvent` |
 | `listSessions`, `revokeAllSessions` | `updateUserMetadata` |
-| `onAuthStateChange` → todo evento al log | `listMembers` (ROLE-001) |
+| `onAuthStateChange` → todo evento al log | `listMembers`, `setMemberRole` (ROLE-001) |
+| Tarjetas Access, Mailing list, Contact form (ver abajo) | `createInvitations`, `releaseWaitlist`, `broadcast` |
 
 El log muestra los eventos de sesión aunque no los dispare un botón: un refresh
 token muerto o un logout en otra pestaña aparecen igual.
@@ -75,7 +77,9 @@ token muerto o un logout en otra pestaña aparecen igual.
 ## Estructura
 
 - `src/App.tsx` — UI + uso de `GatewardAuth` (browser).
-- `server/plugin.ts` — plugin de Vite: `/api/send-event` y `/api/verify` con `GatewardServer`.
+- `src/Access.tsx` — tarjetas Access, Mailing list y Contact form.
+- `src/api.ts` — cliente de las rutas `/api/*` del propio demo.
+- `server/plugin.ts` — plugin de Vite con `GatewardServer`: `/api/send-event`, `/api/verify`, `/api/members`, `/api/set-role`, `/api/set-metadata`, `/api/invite`, `/api/release-waitlist` y `/api/broadcast`.
 - `vite.config.ts` — separa env de browser (`VITE_*`) del de servidor (API key).
 - `scripts/verify-user.mjs` — helper dev para marcar un usuario verificado.
 
@@ -92,3 +96,21 @@ token muerto o un logout en otra pestaña aparecen igual.
   Confirmar revoca todas las sesiones: hay que volver a loguear con el email nuevo.
 - **delete account** es irreversible y pide el password. Da de baja la membership de esta app;
   la identidad se anonimiza solo si no queda en ninguna otra app del pool.
+
+## Acceso, listas y formulario de contacto
+
+Tres tarjetas ejercitan lo que el SDK trae para acceso controlado; la interfaz es del propio demo
+(el SDK no trae UI). Diseño en `ACCESS_AND_NOTIFICATIONS.md` del Core (`docs/FEATURES`).
+
+| Tarjeta | Qué hace | Prepara en el Core |
+|---|---|---|
+| **Access** | muestra `registration_mode`; registra con un código (`inviteToken`); entra y confirma la lista de espera; "invite this email" y "release 1" desde el servidor | `PATCH /v1/apps/{id}` con `registration_mode`; la API key con `invitations:write` y `waitlist:manage` |
+| **Mailing list** | suscribe y confirma, baja por token, preferencias del usuario con sesión y difusión desde el servidor | una lista (`POST /v1/apps/{id}/lists`); la key con `notifications:send` |
+| **Contact form** | `getForm` y dibuja los campos que describe, `submitForm` con campo trampa y hora de muestra, y los errores por campo de `GatewardError.fieldErrors` | un formulario (`PUT /v1/apps/{id}/forms/contact`) |
+
+Los códigos de confirmación salen en el log del Core (`waitlist_token`, `list_token`) cuando no hay
+SMTP; el dashboard permite crear todo lo de la columna derecha sin `curl`.
+
+## Cómo se trabaja
+
+Setup, gate, flujo de ramas y reglas de CI: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). Índice de docs: [docs/README.md](docs/README.md).
