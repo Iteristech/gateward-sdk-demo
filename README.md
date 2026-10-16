@@ -33,10 +33,12 @@ cd gateward-sdk-demo
 
 1. **Levantá el Core local** (repo `gateward-core`, sus pasos están en su README):
    ```bash
-   make run   # docker + migraciones + :8080
-   make bootstrap-admin EMAIL=dev@gateward.local PASSWORD='Dev-pass-123!'   # platform_admin de dev
+   make run    # en una terminal: docker + migraciones + :8080
+   make seed   # en otra: crea el admin dev y los datos de prueba (idempotente)
    ```
-   Su `.env` debe tener `CORS_ALLOWED_ORIGINS=http://localhost:5173` (el browser llama cross-origin).
+   `make seed` imprime el `app_id`, una API key y un usuario final ya verificado (`user@gateward.local` /
+   `User-pass-123!`), y el bloque `.env` listo para pegar en el paso 3. El `.env` del Core debe tener
+   `CORS_ALLOWED_ORIGINS=http://localhost:5173` (el browser llama cross-origin).
    Comprobá con `curl localhost:8080/health/ready`: tiene que decir `"db":"ok","redis":"ok"`.
 
 2. **Compilá el SDK e instalá el demo**, en este orden:
@@ -48,15 +50,14 @@ cd gateward-sdk-demo
    El orden importa: pnpm copia `file:../gateward-sdk` al instalar, no lo enlaza. Si instalaste el
    demo antes de compilar el SDK, volvé a correr `pnpm install`.
 
-3. **Aprovisioná app + API key y llená el `.env`** con el script. Crea ecosystem, pool, app con
-   `environment: test` y una key con los scopes de `.env.example`, y escribe los tres valores:
+3. **Llená el `.env`.** Lo más corto: copiá el bloque `.env` que imprimió `make seed` (tres líneas:
+   `VITE_GATEWARD_APP_ID`, `GATEWARD_APP_ID`, `GATEWARD_API_KEY`) sobre `cp .env.example .env`. La key sale
+   con los scopes que usa el demo. Alternativa que hace lo mismo desde acá y crea una app nueva en cada corrida:
    ```bash
    PLATFORM_EMAIL=dev@gateward.local PLATFORM_PASSWORD='Dev-pass-123!' pnpm provision
    ```
-   Salida esperada: `app <uuid> lista; .env actualizado (la key no se vuelve a mostrar)`. Cada corrida
-   crea un ecosystem y una app nuevos. A mano (Swagger en `/swagger-ui` con `ENABLE_SWAGGER_UI=true`,
-   o `curl`) el camino es platform-login, ecosystem, pool, app y `POST /v1/admin/api-keys`; guardá
-   el `app_id` y la `key` en `.env` (`cp .env.example .env`).
+   Salida esperada: `app <uuid> lista; .env actualizado (la key no se vuelve a mostrar)`. A mano (Swagger en
+   `/swagger-ui`, o `curl`) el camino es platform-login, ecosystem, pool, app y `POST /v1/admin/api-keys`.
 
 4. **Corré:**
    ```bash
@@ -76,7 +77,7 @@ cd gateward-sdk-demo
 | `Failed to resolve entry for package "@gateward/sdk"` en `pnpm dev` | el demo se instaló antes de compilar el SDK | compilá el SDK y corré `pnpm install` otra vez |
 | `faltan PLATFORM_EMAIL y PLATFORM_PASSWORD` | el script necesita el platform_admin del Core | pasalos como en el paso 3 |
 | `missing X-Gateward-App-Id header` (curl directo al Core) | los endpoints de usuario piden el header con el `app_id` | `-H "X-Gateward-App-Id: <app_id>"` |
-| `forbidden` (403) al hacer login tras registrar | el usuario no está verificado | `pnpm verify-user <email>` |
+| `forbidden` (403) al hacer login tras registrar | el usuario no está verificado | `pnpm verify-user <email>` (o `make verify-user EMAIL=<email>` en el Core) |
 | `user_id does not belong to the caller's identity pool` en `/api/send-event` | el `userId` no es de un usuario de esta app | usá el `sub` de un login de esta app |
 | `not found` en `/api/broadcast` | la lista no existe en el Core | creá la lista (ver "Acceso, listas y formulario") |
 
