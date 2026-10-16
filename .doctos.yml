@@ -1,0 +1,6 @@
+docs_root: docs
+naming: UPPERCASE_SNAKE
+folders:
+  TASK_COMPLETED: historial mensual de tareas cerradas (lo gestiona pm-tasks)
+  ARCHIVED: docs obsoletos, cada uno con su nota de archivo al inicio
+root_allowed: [README.md, CLAUDE.md]

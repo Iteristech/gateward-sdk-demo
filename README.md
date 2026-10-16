@@ -109,7 +109,4 @@ SMTP; el dashboard permite crear todo lo de la columna derecha sin `curl`.
 
 ## Cómo se trabaja
 
-Rama por cambio, PR a `main` con squash-merge; `main` no despliega. Se promueve con PR
-`main` a `stg` y luego a `prod`, siempre con merge commit. CI corre en Strongback
-(`[self-hosted, sbk-small]`; los PRs de forks usan `ubuntu-latest`), sin caches y con
-`timeout-minutes` y `concurrency`. Un PR no se mergea en rojo.
+Setup, gate, flujo de ramas y reglas de CI: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). Índice de docs: [docs/README.md](docs/README.md).
