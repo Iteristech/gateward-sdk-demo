@@ -14,7 +14,7 @@ Setup, gate y flujo de trabajo. Qué hace cada botón y el flujo de prueba está
 Ejecutado el 2026-10-15 con `pnpm install --frozen-lockfile` y `pnpm build`: pasó.
 
 ## Verificación pendiente
-**No verificado:** el demo no se ha probado contra un Core vivo ni en un navegador real en esta tanda. Solo se comprobó que compila. Ver [TASK_TODO.md](TASK_TODO.md).
+**No verificado:** el demo no se ha probado contra un Core vivo ni en un navegador real en esta tanda. Solo se comprobó que compila. Ver DEMO-003 en [TASK_TODO.md](TASK_TODO.md).
 
 ## Ramas y PR
 - Una rama por cambio, PR a `main`, CI verde y squash-merge.
@@ -22,7 +22,7 @@ Ejecutado el 2026-10-15 con `pnpm install --frozen-lockfile` y `pnpm build`: pas
 - Un PR no se mergea en rojo.
 
 ## Reglas
-- Máximo 400-500 líneas por archivo.
+- Cada cambio (PR) cabe en 400-500 líneas de código.
 - El repo es público: sin nombres de proyectos internos, hosts ni credenciales reales.
 - CI ([workflow](../.github/workflows/strongback-ci.yml)): los PRs de forks corren en `ubuntu-latest`; no se usa `pull_request_target` con checkout del PR. Sin caches, con `timeout-minutes` y `concurrency`.
 - Lo que se afirma en docs sin haberlo ejecutado se marca "no verificado".
