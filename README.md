@@ -30,7 +30,7 @@ usuario; el backend, con la API key, emite eventos y verifica tokens).
    (el browser llama cross-origin).
 
 2. **Aprovisioná app + api key** (platform-login → ecosystem → pool → app → api key con
-   scopes `events:write`, `events:read_app`, `users:write_app`; para los botones de miembros y
+   scopes `events:write`, `users:write_app`; para los botones de miembros y
    las tarjetas de acceso, además los de `.env.example`). Rápido con el Swagger
    (`ENABLE_SWAGGER_UI=true`, `/swagger-ui`) o por `curl`. Guardá el `app_id` y la `key`.
 
