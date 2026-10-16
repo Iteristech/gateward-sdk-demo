@@ -30,8 +30,9 @@ usuario; el backend, con la API key, emite eventos y verifica tokens).
    (el browser llama cross-origin).
 
 2. **Aprovisioná app + api key** (platform-login → ecosystem → pool → app → api key con
-   scopes `events:write`, `events:read_app`, `users:write_app`). Rápido con el Swagger (`ENABLE_SWAGGER_UI=true`, `/swagger-ui`) o
-   por `curl`. Guardá el `app_id` y la `key`.
+   scopes `events:write`, `events:read_app`, `users:write_app`; para los botones de miembros y
+   las tarjetas de acceso, además los de `.env.example`). Rápido con el Swagger
+   (`ENABLE_SWAGGER_UI=true`, `/swagger-ui`) o por `curl`. Guardá el `app_id` y la `key`.
 
 3. **Configurá el demo:**
    ```bash
@@ -52,7 +53,8 @@ usuario; el backend, con la API key, emite eventos y verifica tokens).
 | register (detecta auto-login), login, refresh, logout | `verifyToken` vía JWKS |
 | `getUser`, `updateProfile`, `changePassword` | `sendEvent` |
 | `listSessions`, `revokeAllSessions` | `updateUserMetadata` |
-| `onAuthStateChange` → todo evento al log | `listMembers` (ROLE-001) |
+| `onAuthStateChange` → todo evento al log | `listMembers`, `setMemberRole` (ROLE-001) |
+| Tarjetas Access, Mailing list, Contact form (ver abajo) | `createInvitations`, `releaseWaitlist`, `broadcast` |
 
 El log muestra los eventos de sesión aunque no los dispare un botón: un refresh
 token muerto o un logout en otra pestaña aparecen igual.
@@ -75,7 +77,9 @@ token muerto o un logout en otra pestaña aparecen igual.
 ## Estructura
 
 - `src/App.tsx` — UI + uso de `GatewardAuth` (browser).
-- `server/plugin.ts` — plugin de Vite: `/api/send-event` y `/api/verify` con `GatewardServer`.
+- `src/Access.tsx` — tarjetas Access, Mailing list y Contact form.
+- `src/api.ts` — cliente de las rutas `/api/*` del propio demo.
+- `server/plugin.ts` — plugin de Vite con `GatewardServer`: `/api/send-event`, `/api/verify`, `/api/members`, `/api/set-role`, `/api/set-metadata`, `/api/invite`, `/api/release-waitlist` y `/api/broadcast`.
 - `vite.config.ts` — separa env de browser (`VITE_*`) del de servidor (API key).
 - `scripts/verify-user.mjs` — helper dev para marcar un usuario verificado.
 
