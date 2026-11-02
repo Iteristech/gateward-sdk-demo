@@ -3,18 +3,19 @@
 Setup, gate y flujo de trabajo. Qué hace cada botón y el flujo de prueba están en el [README](../README.md).
 
 ## Setup
-- El SDK se consume como `file:../gateward-sdk` (ver `package.json`): clona `gateward-sdk` al lado y compílalo, porque se usa desde su `dist/`.
-- Necesitas un Core local (`gateward-core`) con CORS para `http://localhost:5173`. Los pasos del Core, la app y la API key están en el [README](../README.md#setup); las credenciales de dev que figuran ahí son las únicas que se documentan.
-- Copia `.env.example` a `.env` y completa los ids y la API key. La key va sin prefijo `VITE_` para que no llegue al browser.
-- Para las tarjetas Access y Mailing list la key necesita los scopes que lista `.env.example`.
+Los pasos numerados (clonar, Core, compilar el SDK, `pnpm provision`, `pnpm dev`), la salida esperada y los errores comunes están en el [README](../README.md#setup). Dos cosas que importan al desarrollar:
+- El SDK se consume como `file:../gateward-sdk` y pnpm lo copia al instalar: tras cambiar el SDK, compilalo y corré `pnpm install` en el demo.
+- La API key va sin prefijo `VITE_` para que no llegue al browser. Para Access y Mailing list necesita los scopes de `.env.example` (`pnpm provision` ya los pide).
 
 ## Gate
 `pnpm build` (`tsc --noEmit && vite build`) es el único chequeo del repo, igual que en CI. No hay lint ni tests.
 
 Ejecutado el 2026-10-15 con `pnpm install --frozen-lockfile` y `pnpm build`: pasó.
 
-## Verificación pendiente
-**No verificado:** el demo no se ha probado contra un Core vivo ni en un navegador real en esta tanda. Solo se comprobó que compila. Ver DEMO-003 en [TASK_TODO.md](TASK_TODO.md).
+## Verificación
+Ejecutado el 2026-10-16 desde un clon limpio, siguiendo solo el README, contra un Core local (Node 26.0.0, pnpm 10.23.0):
+- Verificado: clonar, compilar el SDK, `pnpm install`, `pnpm provision`, `pnpm dev`; register (202), login (403 sin verificar, 200 tras `pnpm verify-user`); `/api/verify`, `/api/members`, `/api/send-event`, `/api/set-metadata`, `/api/invite` y `/api/release-waitlist` por curl; CORS del Core para `http://localhost:5173`.
+- **No verificado:** la UI en un navegador (botones, log, cambio de email, borrado de cuenta), `/api/set-role`, `/api/broadcast` con una lista real, el formulario de contacto y `make bootstrap-admin` (se usó el admin que ya existía). Ver DEMO-003 en [TASK_TODO.md](TASK_TODO.md).
 
 ## Ramas y PR
 - Una rama por cambio, PR a `main`, CI verde y squash-merge.

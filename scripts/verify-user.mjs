@@ -20,6 +20,10 @@ try {
     { encoding: "utf8" },
   );
   console.log(out.trim());
+  if (/UPDATE 0/.test(out)) {
+    console.error(`✗ no existe ${email}: hacé register primero`);
+    process.exit(1);
+  }
   console.log(`✓ ${email} marked active + verified`);
 } catch (e) {
   console.error(`✗ failed — is '${container}' running (make run in gateward-core)?`);
