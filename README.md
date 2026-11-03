@@ -15,35 +15,71 @@ Es la referencia de integración canónica: replica el patrón real (browser hac
 usuario; el backend, con la API key, emite eventos y verifica tokens).
 
 > **Nota:** este demo consume el SDK por `file:../gateward-sdk`, o sea que
-> espera el repo [`gateward-sdk`](https://github.com/dPeluChe/gateward-sdk)
+> espera el repo [`gateward-sdk`](https://github.com/Iteristech/gateward-sdk)
 > clonado al lado. Cuando `@gateward/sdk` esté publicado en npm, cambiá esa
 > línea de `package.json` por la versión y desaparece el requisito.
 
 ## Setup
 
-1. **Levantá el Core local** (repo `gateward-core`):
-   ```bash
-   make run   # docker + migraciones + :8080
-   make bootstrap-admin EMAIL=admin@local.test PASSWORD='Admin!Pass123'
-   ```
-   Asegurate de que el Core tenga `CORS_ALLOWED_ORIGINS=http://localhost:5173` en su `.env`
-   (el browser llama cross-origin).
+Prerequisitos: Node y pnpm 10 (verificado con Node 26.0.0 y pnpm 10.23.0; el CI usa Node 22),
+Docker (solo para `pnpm verify-user`) y un Core local. Los tres repos (`gateward-core`,
+`gateward-sdk` y este) van clonados lado a lado:
 
-2. **Aprovisioná app + api key** (platform-login → ecosystem → pool → app → api key con
-   scopes `events:write`, `events:read_app`, `users:write_app`). Rápido con el Swagger (`ENABLE_SWAGGER_UI=true`, `/swagger-ui`) o
-   por `curl`. Guardá el `app_id` y la `key`.
+```bash
+git clone https://github.com/Iteristech/gateward-sdk.git
+git clone https://github.com/Iteristech/gateward-sdk-demo.git
+cd gateward-sdk-demo
+```
 
-3. **Configurá el demo:**
+1. **Levantá el Core local** (repo `gateward-core`, sus pasos están en su README):
    ```bash
-   cp .env.example .env      # completá VITE_GATEWARD_APP_ID, GATEWARD_APP_ID, GATEWARD_API_KEY
-   pnpm -C ../gateward-sdk build   # el SDK se consume por file: → necesita dist/
-   pnpm install
+   make run    # en una terminal: docker + migraciones + :8080
+   make seed   # en otra: crea el admin dev y los datos de prueba (idempotente)
    ```
+   `make seed` imprime el `app_id`, una API key y un usuario final ya verificado (`user@gateward.local` /
+   `User-pass-123!`), y el bloque `.env` listo para pegar en el paso 3. El `.env` del Core debe tener
+   `CORS_ALLOWED_ORIGINS=http://localhost:5173` (el browser llama cross-origin).
+   Comprobá con `curl localhost:8080/health/ready`: tiene que decir `"db":"ok","redis":"ok"`.
+
+2. **Compilá el SDK e instalá el demo**, en este orden:
+   ```bash
+   pnpm -C ../gateward-sdk install
+   pnpm -C ../gateward-sdk build     # genera ../gateward-sdk/dist
+   pnpm install                      # copia el SDK ya compilado a node_modules
+   ```
+   El orden importa: pnpm copia `file:../gateward-sdk` al instalar, no lo enlaza. Si instalaste el
+   demo antes de compilar el SDK, volvé a correr `pnpm install`.
+
+3. **Llená el `.env`.** Lo más corto: copiá el bloque `.env` que imprimió `make seed` (tres líneas:
+   `VITE_GATEWARD_APP_ID`, `GATEWARD_APP_ID`, `GATEWARD_API_KEY`) sobre `cp .env.example .env`. La key sale
+   con los scopes que usa el demo. Alternativa que hace lo mismo desde acá y crea una app nueva en cada corrida:
+   ```bash
+   PLATFORM_EMAIL=dev@gateward.local PLATFORM_PASSWORD='Dev-pass-123!' pnpm provision
+   ```
+   Salida esperada: `app <uuid> lista; .env actualizado (la key no se vuelve a mostrar)`. A mano (Swagger en
+   `/swagger-ui`, o `curl`) el camino es platform-login, ecosystem, pool, app y `POST /v1/admin/api-keys`.
 
 4. **Corré:**
    ```bash
    pnpm dev      # http://localhost:5173
    ```
+   Esperás `VITE v6... ready` y `Local: http://localhost:5173/`. Para comprobar el backend del demo:
+   ```bash
+   curl -s localhost:5173/api/verify -H 'content-type: application/json' -d '{"token":"x"}'
+   ```
+   Responde 500 con `JWSInvalid`: la ruta existe y el plugin cargó (con un token real da 200 y los `claims`).
+
+### Errores comunes (vistos en una instalación limpia)
+
+| Si ves | Pasa porque | Arreglo |
+|---|---|---|
+| `sh: tsup: command not found` al compilar el SDK | faltó instalar las dependencias del SDK | `pnpm -C ../gateward-sdk install` y después `build` |
+| `Failed to resolve entry for package "@gateward/sdk"` en `pnpm dev` | el demo se instaló antes de compilar el SDK | compilá el SDK y corré `pnpm install` otra vez |
+| `faltan PLATFORM_EMAIL y PLATFORM_PASSWORD` | el script necesita el platform_admin del Core | pasalos como en el paso 3 |
+| `missing X-Gateward-App-Id header` (curl directo al Core) | los endpoints de usuario piden el header con el `app_id` | `-H "X-Gateward-App-Id: <app_id>"` |
+| `forbidden` (403) al hacer login tras registrar | el usuario no está verificado | `pnpm verify-user <email>` (o `make verify-user EMAIL=<email>` en el Core) |
+| `user_id does not belong to the caller's identity pool` en `/api/send-event` | el `userId` no es de un usuario de esta app | usá el `sub` de un login de esta app |
+| `not found` en `/api/broadcast` | la lista no existe en el Core | creá la lista (ver "Acceso, listas y formulario") |
 
 ## Qué ejercita
 
@@ -52,7 +88,8 @@ usuario; el backend, con la API key, emite eventos y verifica tokens).
 | register (detecta auto-login), login, refresh, logout | `verifyToken` vía JWKS |
 | `getUser`, `updateProfile`, `changePassword` | `sendEvent` |
 | `listSessions`, `revokeAllSessions` | `updateUserMetadata` |
-| `onAuthStateChange` → todo evento al log | `listMembers` (ROLE-001) |
+| `onAuthStateChange` → todo evento al log | `listMembers`, `setMemberRole` (ROLE-001) |
+| Tarjetas Access, Mailing list, Contact form (ver abajo) | `createInvitations`, `releaseWaitlist`, `broadcast` |
 
 El log muestra los eventos de sesión aunque no los dispare un botón: un refresh
 token muerto o un logout en otra pestaña aparecen igual.
@@ -60,7 +97,7 @@ token muerto o un logout en otra pestaña aparecen igual.
 ## Flujo de prueba
 
 1. **register** → 202 (el Core exige verificar email antes de login).
-2. Marcá el usuario verificado (no hay SMTP local):
+2. Marcá el usuario verificado (no hay SMTP local; el email es el mismo del register):
    ```bash
    pnpm verify-user demo@example.com
    ```
@@ -75,9 +112,12 @@ token muerto o un logout en otra pestaña aparecen igual.
 ## Estructura
 
 - `src/App.tsx` — UI + uso de `GatewardAuth` (browser).
-- `server/plugin.ts` — plugin de Vite: `/api/send-event` y `/api/verify` con `GatewardServer`.
+- `src/Access.tsx` — tarjetas Access, Mailing list y Contact form.
+- `src/api.ts` — cliente de las rutas `/api/*` del propio demo.
+- `server/plugin.ts` — plugin de Vite con `GatewardServer`: `/api/send-event`, `/api/verify`, `/api/members`, `/api/set-role`, `/api/set-metadata`, `/api/invite`, `/api/release-waitlist` y `/api/broadcast`.
 - `vite.config.ts` — separa env de browser (`VITE_*`) del de servidor (API key).
 - `scripts/verify-user.mjs` — helper dev para marcar un usuario verificado.
+- `scripts/provision.mjs` — helper dev (`pnpm provision`): crea ecosystem, pool, app y API key en un Core local y llena el `.env`.
 
 ## Lo que cada botón espera que sepas
 
@@ -92,3 +132,21 @@ token muerto o un logout en otra pestaña aparecen igual.
   Confirmar revoca todas las sesiones: hay que volver a loguear con el email nuevo.
 - **delete account** es irreversible y pide el password. Da de baja la membership de esta app;
   la identidad se anonimiza solo si no queda en ninguna otra app del pool.
+
+## Acceso, listas y formulario de contacto
+
+Tres tarjetas ejercitan lo que el SDK trae para acceso controlado; la interfaz es del propio demo
+(el SDK no trae UI). Diseño en `ACCESS_AND_NOTIFICATIONS.md` del Core (`docs/FEATURES`).
+
+| Tarjeta | Qué hace | Prepara en el Core |
+|---|---|---|
+| **Access** | muestra `registration_mode`; registra con un código (`inviteToken`); entra y confirma la lista de espera; "invite this email" y "release 1" desde el servidor | `PATCH /v1/apps/{id}` con `registration_mode`; la API key con `invitations:write` y `waitlist:manage` |
+| **Mailing list** | suscribe y confirma, baja por token, preferencias del usuario con sesión y difusión desde el servidor | una lista (`POST /v1/apps/{id}/lists`); la key con `notifications:send` |
+| **Contact form** | `getForm` y dibuja los campos que describe, `submitForm` con campo trampa y hora de muestra, y los errores por campo de `GatewardError.fieldErrors` | un formulario (`PUT /v1/apps/{id}/forms/contact`) |
+
+Los códigos de confirmación salen en el log del Core (`waitlist_token`, `list_token`) cuando no hay
+SMTP; el dashboard permite crear todo lo de la columna derecha sin `curl`.
+
+## Cómo se trabaja
+
+Setup, gate, flujo de ramas y reglas de CI: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md). Índice de docs: [docs/README.md](docs/README.md).

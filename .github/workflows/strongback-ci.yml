@@ -2,9 +2,9 @@ name: Strongback CI
 
 on:
   push:
-    branches: [main, prod]
+    branches: [main, stg, prod]
   pull_request:
-    branches: [main, prod]
+    branches: [main, stg, prod]
   # Run it by hand to verify, without a commit.
   workflow_dispatch:
 
@@ -34,7 +34,7 @@ jobs:
           path: gateward-sdk-demo
       - uses: actions/checkout@v4
         with:
-          repository: dPeluChe/gateward-sdk
+          repository: Iteristech/gateward-sdk
           path: gateward-sdk
 
       - uses: pnpm/action-setup@v4
